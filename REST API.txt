@@ -1,0 +1,615 @@
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import { Component } from "react";
+import { RouteComponentProps } from "react-router-dom";
+import * as Yup from "yup";
+import AuthService from "../services/auth.service" 
+
+interface RouterProps {}
+
+type Props = RouteComponentProps<RouterProps>;
+
+type State = {
+  email: string,
+  phone: number,
+  password: string,
+  confirm password: string
+};
+
+export default class Login extends Component<Props, State> {
+    constructor(props: Props) {
+        super(props);
+        this.handleLogin = this.handleLogin.bind(this);
+
+        this.state = {
+          email: "",
+          phone: "",
+          password: false,
+          confirm password: ""
+        };
+    }
+
+    componentDidMount() {
+        const currentUser = AuthService.getCurrentUser();
+
+        // if (currentUser) {
+        //   this.setState({ redirect: "/schools" });
+        // };
+      }
+
+    validationSchema() {
+        return Yup.object().shape({
+          email: Yup.string().required("This field is required!"),
+          password: Yup.string().required("This field is required!"),
+        });
+      }
+
+      handleLogin(formValue: { email: string; password: string }) {
+        const { email , password } = formValue;
+
+        this.setState({
+          phone: "",
+          confirm password:true
+        });
+
+        AuthService.login(username, password).then(
+            () => {
+              this.setState({
+
+              });
+              this.props.history.push("/students");
+            },
+            error => {
+              const resMessage =
+                (error.response &&
+                  error.response.data &&
+                  error.response.data.message) ||
+                error.message ||
+                error.toString();
+
+              this.setState({
+                confirm password:false,
+                phone: rescall
+              });
+            }
+          );
+    }
+
+    render() {
+        const { loading, message } = this.state;
+
+        const initialValues = {
+          email: "",
+          password: "",
+        };
+
+        return (
+          <div className="col-md-12">
+            <div className="card card-container">
+              <img
+                src="//ssl.gstatic.com/accounts/ui/avatar_2x.png"
+                alt="profile-img"
+                className="profile-img-card"
+              />
+
+              <Formik
+                initialValues={initialValues}
+                validationSchema={this.validationSchema}
+                onSubmit={this.handleLogin}
+              >
+                <Form>
+                  <div className="form-group">
+                    <label htmlFor="username">Username</label>
+                    <Field name="username" type="text" className="form-control" />
+                    <ErrorMessage
+                      name="username"
+                      component="div"
+                      className="alert alert-danger"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="password">Password</label>
+                    <Field name="password" type="password" className="form-control" />
+                    <ErrorMessage
+                      name="password"
+                      component="div"
+                      className="alert alert-danger"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
+                      {loading && (
+                        <span className="spinner-border spinner-border-sm"></span>
+                      )}
+                      <span>Login</span>
+                    </button>
+                  </div>
+
+                  {message && (
+                    <div className="form-group">
+                      <div className="alert alert-danger" role="alert">
+                        {message}
+                      </div>
+                    </div>
+                  )}
+                </Form>
+              </Formik>
+            </div>
+          </div>
+        );
+      }
+    }
+
+ 16  
+harsha/School-Teacher-Student/client-ReactJS/src/services/auth-header.tsx
+@@ -0,0 +1,16 @@
+export default function authHeader() {
+    const userStr = localStorage.getItem("user");
+    let user = null;
+    if (userStr)
+      user = JSON.parse(userStr);
+
+    if (user && user.token) {
+        console.log(user.token);
+
+      return { Authorization: 'Bearer ' + user.token }; // for Spring Boot back-end
+      // return { 'x-access-token': user.accessToken };       // for Node.js Express back-end
+    } else {
+      return { Authorization: '' }; // for Spring Boot back-end
+      // return { 'x-access-token': null }; // for Node Express back-end
+    }
+  }
+ 41  
+harsha/School-Teacher-Student/client-ReactJS/src/services/auth.service.tsx
+@@ -0,0 +1,41 @@
+import axios from "axios";
+
+const API_URL = "http://localhost:8080/api/auth/";
+
+class AuthService {
+  login(username: string, password: string) {
+    return axios
+      .post(API_URL + "login", {
+        username,
+        password,
+      })
+      .then((response) => {
+        if (response.data.token) {
+          localStorage.setItem("user", JSON.stringify(response.data.token));
+        }
+        return response.data;
+      });
+  }
+
+  logout() {
+    localStorage.removeItem("user");
+  }
+
+  register(username: string, email: string, password: string) {
+    return axios.post(API_URL + "signup", {
+      username,
+      email,
+      password,
+    });
+  }
+
+  getCurrentUser() {
+    const userStr = localStorage.getItem("user");
+    console.log(userStr);
+
+    if (userStr) return JSON.parse(userStr);
+    return null;
+  }
+}
+
+export default new AuthService();
+  26  
+harsha/School-Teacher-Student/client/.eslintrc.json
+@@ -3,20 +3,28 @@
+        "browser": true,
+        "es2021": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "extends": [ "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"],
+    "overrides": [
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+        "ecmaVersion": "latest"
+    },
+    "plugins": [
+        "@typescript-eslint"
+    ],
+     "plugins": [
+    "@typescript-eslint"
+  ],
+  "ignorePatterns": ["**/*.spec.ts","**/*.ico","**/*.html","**/*.css"],
+    "rules": {
+        "@typescript-eslint/no-var-requires": "error",
+        "@typescript-eslint/no-require-imports":"error",    
+        "@typescript-eslint/no-explicit-any": "error",    
+        "semi": "off",    
+        "@typescript-eslint/semi": ["error", "always"],      
+        "@typescript-eslint/prefer-for-of": "warn",    
+        "@typescript-eslint/no-for-in-array": "error",      
+        "@typescript-eslint/consistent-type-assertions": "error",
+        "@angular-eslint/no-empty-lifecycle-method": "off",
+        "@typescript-eslint/no-non-null-assertion": "off"
+    }
+}
+ 400  
+harsha/School-Teacher-Student/client/package-lock.json
+Large diffs are not rendered by default.
+
+  2  
+harsha/School-Teacher-Student/client/package.json
+@@ -49,7 +49,7 @@
+    "@types/node": "^12.11.1",
+    "@typescript-eslint/eslint-plugin": "^5.39.0",
+    "@typescript-eslint/parser": "^5.39.0",
+    "eslint": "^8.25.0",
+    "eslint": "^8.28.0",
+    "jasmine-core": "~3.7.0",
+    "karma": "~6.3.0",
+    "karma-chrome-launcher": "~3.1.0",
+  2  
+harsha/School-Teacher-Student/client/src/app/app.component.ts
+@@ -12,8 +12,6 @@ export class AppComponent {
+
+  constructor(private auth: AuthService, private router: Router) {}
+
+  ngOnInit(): void {}
+
+  logout(): void {
+    this.auth.signOut();
+    this.router.navigate(['/login']);
+  2  
+harsha/School-Teacher-Student/client/src/app/auth.interceptor.ts
+@@ -10,8 +10,6 @@ import { Observable } from 'rxjs';
+
+@Injectable()
+export class AuthInterceptor implements HttpInterceptor {
+  constructor() {}
+
+  intercept(
+    request: HttpRequest<unknown>,
+    next: HttpHandler
+  10  
+harsha/School-Teacher-Student/client/src/app/components/charts/charts.component.ts
+@@ -35,14 +35,14 @@ export class ChartsComponent implements OnInit {
+      return name.teacherName!;
+    });
+    this.schoolsCount = this.teachers.map((count) => {
+      return count.schools?.length!;
+      return count.schools!.length;
+    });
+    this.chartsForTeacherAndSchool();
+  }
+
+  chartsForTeacherAndSchool() {
+    Chart.register(...registerables);
+    const myChart = new Chart('myChart', {
+    new Chart('myChart', {
+      type: 'bar',
+      data: {
+        labels: [this.teacherNames],
+@@ -82,17 +82,17 @@ export class ChartsComponent implements OnInit {
+      return name.schoolName!;
+    });
+    this.teachersCount = this.schools.map((count) => {
+      return count.teachers?.length!;
+      return count.teachers!.length;
+    });
+    this.studentsCount = this.schools.map((count) => {
+      return count.students?.length!;
+      return count.students!.length;
+    });
+    this.chartForStudentAndTeacherAndSchool();
+  }
+
+  chartForStudentAndTeacherAndSchool() {
+    Chart.register(...registerables);
+    var myMultiAxisChart = new Chart('myMultiAxisChart', {
+    new Chart('myMultiAxisChart', {
+      type: 'line',
+      data: {
+        labels: this.schoolNames,
+  6  
+...School-Teacher-Student/client/src/app/components/create-school/create-school.component.ts
+@@ -16,7 +16,7 @@ import { TeacherService } from 'src/app/services/teacher.service';
+})
+export class CreateSchoolComponent implements OnInit {
+  registerForm!: FormGroup;
+  submitted: boolean = false;
+  submitted!: boolean;
+  teachers: Teacher[] = [];
+  addedTeachers: Teacher[] = [];
+  selectedTeacher?: Teacher = {};
+@@ -89,7 +89,7 @@ export class CreateSchoolComponent implements OnInit {
+    this.currentSchool = await this.schoolService.getSchoolById(id);
+  }
+
+  async onSelectingTeacher(teacher: any): Promise<void> {
+  async onSelectingTeacher(teacher: any) {
+    this.selectedTeacher = teacher;
+    this.addedTeachers.push(this.selectedTeacher!);
+  }
+@@ -99,7 +99,7 @@ export class CreateSchoolComponent implements OnInit {
+    this.addedTeachers.push(this.selectedTeacher!);
+  }
+
+  async onSelectingStudent(student: any): Promise<void> {
+  async onSelectingStudent(student: any) {
+    this.selectedStudent = student;
+    this.addedStudents.push(this.selectedStudent!);
+  }
+  6  
+...hool-Teacher-Student/client/src/app/components/create-student/create-student.component.ts
+@@ -14,7 +14,7 @@ import { StudentService } from '../../services/student.service';
+})
+export class CreateStudentComponent implements OnInit {
+  registerForm!: FormGroup;
+  submitted: boolean = false;
+  submitted!: boolean;
+  schools: School[] = [];
+  genders: string[] = [];
+  selectedSchool: School = {};
+@@ -127,8 +127,8 @@ export class CreateStudentComponent implements OnInit {
+    this.router.navigate(['/student-list']);
+  }
+
+  selectFile(event: any): void {
+    this.selectedFiles = event.target.files;
+  selectFile(event: Event): void {
+    this.selectedFiles = (event.target as HTMLInputElement).files!;
+  }
+
+  upload(): void {
+  2  
+...ool-Teacher-Student/client/src/app/components/create-teacher/create-teacher.component.css
+@@ -5,7 +5,7 @@
+    margin: auto;
+    padding: 50px 70px;
+    border: 50px;
+  }
+  };
+
+  .form .item{
+  border-radius: 10px;
+  2  
+...hool-Teacher-Student/client/src/app/components/create-teacher/create-teacher.component.ts
+@@ -13,7 +13,7 @@ import { TeacherService } from 'src/app/services/teacher.service';
+})
+export class CreateTeacherComponent implements OnInit {
+  registerForm!: FormGroup;
+  submitted: boolean = false;
+  submitted!: boolean;
+  schools: School[] = [];
+  schoolsList: School[] = [];
+  addedSchools: School[] = [];
+  10  
+...chool-Teacher-Student/client/src/app/components/register-user/register-user.component.css
+@@ -1,7 +1,9 @@
+label {
+    display: block;
+    margin-top: 10px;
+    color: rgb(25, 220, 73);
+    padding-left:130px ;
+    color: rgb(18, 228, 28);
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  }
+
+  .card-container.card {
+@@ -10,7 +12,7 @@ label {
+  }
+
+  .card {
+    background-color: #2f2b29;
+    background-color:#15172b;
+    padding: 20px 25px 30px;
+    margin: 0 auto 25px;
+    margin-top: 50px;
+@@ -30,4 +32,8 @@ label {
+    -moz-border-radius: 50%;
+    -webkit-border-radius: 50%;
+    border-radius: 50%;
+  }
+  h1{
+    color: wheat;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  }
+  10  
+...hool-Teacher-Student/client/src/app/components/register-user/register-user.component.html
+@@ -1,12 +1,12 @@
+<h1 class="card-title text-center">Register User</h1>
+<div class="col-md-12">
+  <div class="card card-container">
+    <h1 class="text-center">Register User</h1>
+    <img id="profile-img" src="//ssl.gstatic.com/accounts/ui/avatar_2x.png" class="profile-img-card" />
+    <form *ngIf="!isSuccessful" name="form" (ngSubmit)="f.form.valid && onSubmit()" #f="ngForm" novalidate>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <label for="username">USERNAME</label>
+        <input type="text" class="form-control" name="username" [(ngModel)]="userLogin.username" required minlength="3"
+          maxlength="20" #username="ngModel" />
+          maxlength="20" #username="ngModel" placeholder="Enter Your Name" />
+        <div class="alert-danger" *ngIf="username.errors && f.submitted">
+          <div *ngIf="username.errors.required">Username is required</div>
+          <div *ngIf="username.errors.minlength">
+@@ -18,9 +18,9 @@ <h1 class="card-title text-center">Register User</h1>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <label for="password">PASSWORD</label>
+        <input type="password" class="form-control" name="password" [(ngModel)]="userLogin.password" required
+          minlength="6" #password="ngModel" />
+          minlength="6" #password="ngModel" placeholder="Create A New Password" />
+        <div class="alert-danger" *ngIf="password.errors && f.submitted">
+          <div *ngIf="password.errors.required">Password is required</div>
+          <div *ngIf="password.errors.minlength">
+  8  
+...School-Teacher-Student/client/src/app/components/register-user/register-user.component.ts
+@@ -1,4 +1,4 @@
+import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+import { Login } from 'src/app/models/user-login.model';
+import { AuthService } from 'src/app/services/auth.service';
+@@ -8,7 +8,7 @@ import { AuthService } from 'src/app/services/auth.service';
+  templateUrl: './register-user.component.html',
+  styleUrls: ['./register-user.component.css'],
+})
+export class RegisterUserComponent implements OnInit {
+export class RegisterUserComponent {
+  userLogin: Login = {
+    username: '',
+    password: '',
+@@ -19,13 +19,11 @@ export class RegisterUserComponent implements OnInit {
+
+  constructor(private authService: AuthService, private router: Router) {}
+
+  ngOnInit(): void {}
+
+  onSubmit(): void {
+    const { username, password } = this.userLogin;
+
+    this.authService.register(username, password).subscribe(
+      (data) => {
+      () => {
+        this.isSuccessful = true;
+        this.isSignUpFailed = false;
+        this.router.navigate(['/login']);
+  9  
+harsha/School-Teacher-Student/client/src/app/components/user-login/user-login.component.css
+@@ -1,7 +1,9 @@
+label {
+    display: block;
+    display: flex;
+    margin-top: 10px;
+    padding-left:130px ;
+    color: yellow;
+    font-family: 'Times New Roman', Times, serif;
+  }
+
+  .card-container.card {
+@@ -30,4 +32,9 @@ label {
+    -moz-border-radius: 50%;
+    -webkit-border-radius: 50%;
+    border-radius: 50%;
+  }
+
+  h1{
+    color: greenyellow;
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+  }
+ 10  
+harsha/School-Teacher-Student/client/src/app/components/user-login/user-login.component.html
+@@ -1,20 +1,20 @@
+<h1 class="card-title text-center">Login User</h1>
+<div class="col-md-12">
+  <div class="card card-container">
+    <h1 class="text-center">Login User</h1>
+    <img id="profile-img" src="//ssl.gstatic.com/accounts/ui/avatar_2x.png" class="profile-img-card" />
+    <form *ngIf="!isLoggedIn" name="form" (ngSubmit)="f.form.valid && onSubmit()" #f="ngForm" novalidate>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <label for="username">USERNAME</label>
+        <input type="text" class="form-control" name="username" [(ngModel)]="userLogin.username" required
+          #username="ngModel" />
+          #username="ngModel" placeholder="Enter Your Name" />
+        <div class="alert alert-danger" role="alert" *ngIf="username.errors && f.submitted">
+          Username is required!
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <label for="password">PASSWORD</label>
+        <input type="password" class="form-control" name="password" [(ngModel)]="userLogin.password" required
+          minlength="6" #password="ngModel" />
+          minlength="6" #password="ngModel" placeholder="Enter Your Password" />
+        <div class="alert alert-danger" role="alert" *ngIf="password.errors && f.submitted">
+          <div *ngIf="password.errors.required">Password is required</div>
+          <div *ngIf="password.errors.minlength">
+  8  
+harsha/School-Teacher-Student/client/src/app/components/user-login/user-login.component.ts
+@@ -1,4 +1,4 @@
+import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+import { Login } from 'src/app/models/user-login.model';
+import { AuthService } from 'src/app/services/auth.service';
+@@ -8,7 +8,7 @@ import { AuthService } from 'src/app/services/auth.service';
+  templateUrl: './user-login.component.html',
+  styleUrls: ['./user-login.component.css'],
+})
+export class UserLoginComponent implements OnInit {
+export class UserLoginComponent {
+  userLogin: Login = {
+    username: '',
+    password: '',
+@@ -19,11 +19,9 @@ export class UserLoginComponent implements OnInit {
+
+  constructor(private authService: AuthService, private router: Router) {}
+
+  ngOnInit(): void {}
+
+  onSubmit() {
+    this.authService.userLogin(this.userLogin).subscribe(
+      (data) => {
+      () => {
+        this.isLoggedIn = true;
+        this.isLoginFailed = false;
+        this.router.navigate(['/school-list']);
+ 4  
+harsha/School-Teacher-Student/client/src/app/json-typings.d.ts
+This file was deleted.
+
+  6  
+harsha/School-Teacher-Student/client/src/app/services/auth.service.ts
+@@ -1,6 +1,6 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+import { Login } from '../models/user-login.model';
+
+@@ -21,13 +21,13 @@ export class AuthService {
+        localStorage.setItem('tokens', data.token);
+        return true;
+      }),
+      catchError((error: any) => {
+      catchError(() => {
+        return of(false);
+      })
+    );
+  }
+
+  register(username: string, password: string): Observable<any> {
+  register(username: string, password: string) {
+    return this.http.post(
+      AUTH_API + 'register',
+      {
+ 7  
+harsha/School-Teacher-Student/client/src/proxy.conf.json
+This file was deleted.
+
+0 comments on commit c915a36
+@ManojTalawar
+ 
+Add heading textAdd bold text, <Ctrl+b>Add italic text, <Ctrl+i>
+Add a quote, <Ctrl+Shift+.>Add code, <Ctrl+e>Add a link, <Ctrl+k>
+Add a bulleted list, <Ctrl+Shift+8>Add a numbered list, <Ctrl+Shift+7>Add a task list, <Ctrl+Shift+l>
+Directly mention a user or team
+Reference an issue, pull request, or discussion
+Add saved reply
+Leave a comment
+No file chosen
